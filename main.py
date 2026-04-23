@@ -1,6 +1,8 @@
 import customtkinter as ctk
 import re
 from enum import Enum
+from tkcalendar import Calendar, DateEntry
+from datetime import datetime
 
 app = ctk.CTk()
 app.title("University Life")
@@ -8,21 +10,10 @@ app.geometry("500x400")
 ctk.set_appearance_mode("light")
 
 scheduleFile = "schedule.txt"
-tasksFile = "tasks.txt"
-eventsFile = "events.txt"
 notesFile = "notes.txt"
 
 mainContainer = ctk.CTkFrame(app, fg_color="transparent")
-mainContainer.pack(pady=20, padx=20, expand=True)
-
-class Page(Enum):
-    MENU = "MENU"
-    SCHEDULE = "SCHEDULE"
-    TASKS = "TASKS"
-    EVENTS = "EVENTS"
-    NOTES = "NOTES"
-
-currentPage = Page.MENU
+mainContainer.pack(expand=True)
 
 menuContainer = ctk.CTkFrame(mainContainer, fg_color="transparent")
 menuContainer.pack()
@@ -35,14 +26,14 @@ def makeLabel(text, container):
         text_color="#1c2b48",
         corner_radius=18
     )
-    label.pack(pady=5)
+    label.pack(pady=20)
 
 def makeButton(text, container, command):
     button = ctk.CTkButton(
         container,
         text=text,
-        width=200,
-        font=("Dubai", 20, "bold"),
+        width=250,
+        font=("Dubai", 28, "bold"),
         fg_color="#5f86a6",
         text_color="#e8ecef",
         hover_color="#3f5c75",
@@ -75,13 +66,11 @@ def makeGoBackButton(container, command):
         border_width=2,
         command=command
     )
-    button.pack(pady=5)
+    button.pack(pady=10)
 
 def hideAll():
     menuContainer.pack_forget()
     scheduleWindow.pack_forget()
-    tasksWindow.pack_forget()
-    eventsWindow.pack_forget()
     notesWindow.pack_forget()
     addClassWindow.pack_forget()
     viewScheduleWindow.pack_forget()
@@ -99,7 +88,7 @@ def saveDataButton(container, command):
         border_width=2,
         command=command
     )
-    button.pack()
+    button.pack(pady=20)
 
 
 def checkInput(data, type):
@@ -124,19 +113,22 @@ def showNotification(container, message, color):
         fg_color=color,
         corner_radius=8
     )
-    notification.pack(pady=5)
+    notification.place(relx=0.5, rely=0.19, anchor="center")
     app.after(2000, notification.destroy)
 
+def setToNullSchedule():
+    classField.delete(0, "end")
+    dayField.set_date(datetime.today()) 
+    timeField.delete(0, "end")
+    roomField.delete(0, "end")
+
 def saveDataButtonClicked(classs, day, time, room):
-    if checkInput(classs, "text") and checkInput(day, "date") and checkInput(time, "time") and checkInput(room, "mix"):
+    if checkInput(classs, "text") and checkInput(time, "time") and checkInput(room, "mix"):
         try:
             with open(scheduleFile, 'a') as f:
-                f.write(f"{classs},{day},{time},{room}\n")
+                f.write(f"{classs} - {day} - {time} - {room}\n")
             showNotification(addClassWindow, "DATA SAVED!", "#38c34a")
-            classField.delete(0, "end")
-            dayField.delete(0, "end")
-            timeField.delete(0, "end")
-            roomField.delete(0, "end")
+            setToNullSchedule()
         except Exception as e:
             showNotification(addClassWindow, f"Error: {e}", "#e74c3c")
     else:
@@ -148,6 +140,7 @@ def goToMenu():
 
 def goToSchedule():
     hideAll()
+    setToNullSchedule()
     scheduleWindow.pack()
 
 def buttonClicked(name):
@@ -155,12 +148,28 @@ def buttonClicked(name):
     match name:
         case "scheduleButton":
             scheduleWindow.pack()
-        case "tasksButton":
-            tasksWindow.pack()
-        case "eventsButton":
-            eventsWindow.pack()
         case "notesButton":
             notesWindow.pack()
+
+
+def makeText(container, text):
+    text = ctk.CTkLabel(
+        container,
+        text=text,
+        font=("Dubai", 24, "bold"),
+        text_color="#e8ecef",
+        anchor="n"
+    )
+    text.pack(anchor="n", fill="x")
+
+def printText(container, filename):
+    try:
+        file = open(filename)
+        for line in file:
+            makeText(container, line)
+    except:
+        showNotification(container, "Error! Cant load schedule", "#e74c3c")
+
 
 def setSchedulesPages(page):
     hideAll()
@@ -168,27 +177,41 @@ def setSchedulesPages(page):
         case "addClassWindow":
             addClassWindow.pack()
         case "viewScheduleWindow":
+            for widget in viewScheduleWindow.winfo_children():
+                widget.destroy()
+            makeLabel("Schedule", viewScheduleWindow)
+    
+            scrollFrame = makeFrame(viewScheduleWindow)  
+            printText(scrollFrame, scheduleFile)         
+    
+            makeGoBackButton(viewScheduleWindow, goToSchedule)
             viewScheduleWindow.pack()
         case "deleteClassWindow":
             deleteClassWindow.pack()
+
+def makeFrame(container):
+    frame = ctk.CTkScrollableFrame (
+        container,
+        width= 500,
+        height= 400,
+        fg_color= "#1c2b48"
+    )
+    frame.pack()
+    return frame
 
 def closeApp():
     app.destroy()
 
 
 scheduleWindow= ctk.CTkFrame(mainContainer, fg_color="transparent")
-tasksWindow= ctk.CTkFrame(mainContainer, fg_color="transparent")
-eventsWindow= ctk.CTkFrame(mainContainer, fg_color="transparent")
 notesWindow= ctk.CTkFrame(mainContainer, fg_color="transparent")
 addClassWindow= ctk.CTkFrame(mainContainer, fg_color="transparent")  
 viewScheduleWindow= ctk.CTkFrame(mainContainer, fg_color="transparent")
 deleteClassWindow= ctk.CTkFrame(mainContainer, fg_color="transparent")
 
 # Menu
-makeLabel("CAMPUS LIFE PLANNER", menuContainer)
+makeLabel("UNIVERSITY LIFE PLANNER", menuContainer)
 makeButton("Schedule", menuContainer, lambda: buttonClicked("scheduleButton"))
-makeButton("Tasks", menuContainer, lambda: buttonClicked("tasksButton"))
-makeButton("Events", menuContainer, lambda: buttonClicked("eventsButton"))
 makeButton("Notes", menuContainer, lambda: buttonClicked("notesButton"))
 
 exitButton = ctk.CTkButton(
@@ -210,12 +233,24 @@ makeGoBackButton(scheduleWindow, goToMenu)
 makeLabel("Add Class", addClassWindow)
 
 classField = makeTextField("Enter class", addClassWindow)
-dayField   = makeTextField("Enter day",   addClassWindow)
+dayField = DateEntry(
+    addClassWindow,
+    width=22,
+    font=("Dubai", 18, "bold"),
+    fieldbackground="#cfe3f1",
+    foreground="#333333",
+    background="#5f86a6",
+    borderwidth=0,
+    date_pattern="dd.mm.yy"
+)
+dayField.pack(pady=5, ipady=8)
 timeField  = makeTextField("Enter time",  addClassWindow)
 roomField  = makeTextField("Enter room",  addClassWindow)
 
 saveDataButton(addClassWindow, lambda: saveDataButtonClicked(classField.get(), dayField.get(), timeField.get(), roomField.get()))
-
 makeGoBackButton(addClassWindow, goToSchedule)
+
+# View Schedule
+
 
 app.mainloop()

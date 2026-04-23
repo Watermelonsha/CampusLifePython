@@ -1,2 +1,5 @@
-
-python,23.04.26,10:15,Big Lab
+class  -  day    -   time  -  room
+python - 23.43.44 - 12:55 - Big Lab
+koren lan - 23.04.2026 - 14:00 - B201
+pyhon - 23.04.26 - 12:44 - S2
+discrete math - 01.04.26 - 10:15 - B204
