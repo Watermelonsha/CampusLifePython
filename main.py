@@ -132,7 +132,7 @@ def saveDataButtonClicked(classs, day, time, room):
         except Exception as e:
             showNotification(addClassWindow, f"Error: {e}", "#e74c3c")
     else:
-        showNotification(mainContainer, "INVALID DATA", "#e74c3c")
+        showNotification(addClassWindow, "INVALID DATA", "#e74c3c")
 
 def goToMenu():
     hideAll()
@@ -152,24 +152,93 @@ def buttonClicked(name):
             notesWindow.pack()
 
 
+def deleteButtonClicked(data, fname):
+    # try:
+    #     file = open(fname, 'r')
+    #     lines = file.readlines()
+    #     file.close()
+
+    #     file = open(fname, 'w')
+    #     for line in lines:
+    #         if line.strip() != data.strip():
+    #             file.write(line)
+    #     file.close()
+
+    #     setSchedulesPages("deleteClassWindow")
+    # except:
+    #     showNotification(deleteClassWindow, "Error! Cant delete class", "#e74c3c")
+
+    try:
+        file = open(fname, 'r')
+        lines = file.readlines()
+        file.close()
+
+        newLines = []
+        for line in lines:
+            if line.strip() != data.strip():
+                newLines.append(line)
+
+        file = open(fname, 'w')
+        for line in newLines:
+            file.write(line)
+        file.close()
+
+        setSchedulesPages("deleteClassWindow")
+    except Exception as e:
+        showNotification(deleteClassWindow, "Error! Cant delete class", "#e74c3c")
+
+
 def makeText(container, text):
-    text = ctk.CTkLabel(
+    label = ctk.CTkLabel(
         container,
         text=text,
         font=("Dubai", 24, "bold"),
         text_color="#e8ecef",
-        anchor="n"
     )
-    text.pack(anchor="n", fill="x")
+    label.pack()
 
-def printText(container, filename):
+def makeDeleteCommand(line, filename):
+    def command():
+        deleteButtonClicked(line, filename)
+    return command
+
+def printText(container, filename, page):
     try:
         file = open(filename)
+        count = 0
         for line in file:
-            makeText(container, line)
-    except:
-        showNotification(container, "Error! Cant load schedule", "#e74c3c")
+            count = count + 1
+            if page == "view":
+                makeText(container, line)
+            elif page == "delete":
+                row = ctk.CTkFrame(
+                    container,
+                    fg_color="transparent"
+                )
+                row.pack(fill="x", pady=2)
 
+                button = ctk.CTkButton(
+                    row,
+                    text="[X]",
+                    width=60,
+                    font=("Dubai", 24, "bold"),
+                    text_color="#e8ecef",
+                    command=makeDeleteCommand(line, filename)
+                )
+                button.pack(side="right", padx=10)
+
+                label = ctk.CTkLabel(
+                    row,
+                    text=line.strip(),
+                    font=("Dubai", 24, "bold"),
+                    text_color="#e8ecef",
+                )
+                label.pack(side="left", padx=10)
+
+        if count == 0:
+            makeText(container, "No classes found")
+    except:
+        showNotification(container, "Error! Cant load schedule", "#e74c3c")       
 
 def setSchedulesPages(page):
     hideAll()
@@ -181,18 +250,26 @@ def setSchedulesPages(page):
                 widget.destroy()
             makeLabel("Schedule", viewScheduleWindow)
     
-            scrollFrame = makeFrame(viewScheduleWindow)  
-            printText(scrollFrame, scheduleFile)         
+            scrollFrameView = makeFrame(viewScheduleWindow)  
+            printText(scrollFrameView, scheduleFile, "view")         
     
             makeGoBackButton(viewScheduleWindow, goToSchedule)
             viewScheduleWindow.pack()
         case "deleteClassWindow":
+            for widget in deleteClassWindow.winfo_children():
+                widget.destroy()
+            makeLabel("Schedule", deleteClassWindow)
+
+            scrollFrameDelete = makeFrame(deleteClassWindow)
+            printText(scrollFrameDelete, scheduleFile, "delete")
+
+            makeGoBackButton(deleteClassWindow, goToSchedule)
             deleteClassWindow.pack()
 
 def makeFrame(container):
     frame = ctk.CTkScrollableFrame (
         container,
-        width= 500,
+        width= 800,
         height= 400,
         fg_color= "#1c2b48"
     )
@@ -250,7 +327,9 @@ roomField  = makeTextField("Enter room",  addClassWindow)
 saveDataButton(addClassWindow, lambda: saveDataButtonClicked(classField.get(), dayField.get(), timeField.get(), roomField.get()))
 makeGoBackButton(addClassWindow, goToSchedule)
 
-# View Schedule
+
 
 
 app.mainloop()
+
+
